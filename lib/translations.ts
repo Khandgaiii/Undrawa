@@ -287,7 +287,7 @@ export const translations: Record<Language, Translations> = {
     leakWarning: 'Ус алдалтын төлөв',
     statusNotLeaked: 'Ус алдалт илрээгүй',
     criticalWarning: 'Ноцтой анхааруулга',
-    waterLeakDetected: 'Усны ус алдалт илэрлээ',
+    waterLeakDetected: 'Ус алдалт илэрлээ',
     systemNormal: 'Хэвийн ажиллаж байна',
     waterLevel: 'Усны түвшин',
     smsSent: 'SMS илгээгдлээ',
