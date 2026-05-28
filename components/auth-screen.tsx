@@ -11,7 +11,7 @@ import { type Translations } from '@/lib/translations'
 
 interface AuthScreenProps {
   onLogin: () => void
-  onGoogleLogin?: () => Promise<void> | void
+  onGoogleLogin?: () => Promise<string | null> | string | null
   t: Translations
 }
 
@@ -19,6 +19,7 @@ export function AuthScreen({ onLogin, onGoogleLogin, t }: AuthScreenProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [googleError, setGoogleError] = useState<string | null>(null)
   const isNativeApp = useMemo(() => {
     if (typeof window === 'undefined') return false
     const url = window.location.href
@@ -55,9 +56,13 @@ export function AuthScreen({ onLogin, onGoogleLogin, t }: AuthScreenProps) {
 
   const handleGoogleSignIn = async () => {
     if (!onGoogleLogin || isNativeApp || googleLoading) return
+    setGoogleError(null)
     setGoogleLoading(true)
     try {
-      await onGoogleLogin()
+      const error = await onGoogleLogin()
+      if (error) {
+        setGoogleError(error)
+      }
     } finally {
       setGoogleLoading(false)
     }
@@ -160,6 +165,9 @@ export function AuthScreen({ onLogin, onGoogleLogin, t }: AuthScreenProps) {
                   >
                     {googleLoading ? 'Signing in...' : 'Sign in with Google'}
                   </Button>
+                )}
+                {googleError && (
+                  <p className="text-xs text-destructive mt-1">{googleError}</p>
                 )}
               </form>
             </TabsContent>

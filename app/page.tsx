@@ -58,18 +58,16 @@ export default function UndrawaDashboard() {
   }, [baseUrl, poll])
 
   const handleLogin = () => setIsAuthenticated(true)
-  const handleGoogleLogin = useCallback(async () => {
+  const handleGoogleLogin = useCallback(async (): Promise<string | null> => {
     const result = await signInWithGoogleWeb()
     if (result.user) {
       setIsAuthenticated(true)
-      return
+      return null
     }
     if (result.redirectStarted) {
-      return
+      return null
     }
-    if (result.errorMessage && typeof window !== 'undefined') {
-      window.alert(result.errorMessage)
-    }
+    return result.errorMessage ?? 'Google sign-in failed.'
   }, [])
   const handleLogout = () => {
     setIsAuthenticated(false)
