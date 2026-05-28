@@ -1,14 +1,3 @@
-/*
- * Undrawa — ESP32 water security controller
- * Hardware: leak sensor, water level (analog), relay + valve, SIM900 (SMS)
- * API for Undrawa mobile app: GET /api/status  POST /api/relay
- *
- * Libraries (Arduino IDE Library Manager):
- *   - None required (uses built-in WiFi / WebServer)
- *
- * Board: ESP32 Dev Module
- */
-
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
@@ -401,9 +390,6 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  if (WiFi.status() == WL_CONNECTED) {
-    MDNS.update();
-  }
   updateSensors();
   handleAutoRelay();
   processSmsRetry();

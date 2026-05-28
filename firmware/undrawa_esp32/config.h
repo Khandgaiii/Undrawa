@@ -4,18 +4,18 @@
 #ifndef UNDRAWA_CONFIG_H
 #define UNDRAWA_CONFIG_H
 
-#define WIFI_SSID "Khagaanz"
-#define WIFI_PASSWORD "12345678"
+#define WIFI_SSID "KOOSEN G313"
+#define WIFI_PASSWORD "99325107"
 
 // SIM card must support SMS. Include country code, e.g. +976XXXXXXXX
-#define ALERT_PHONE "+97689240665"
+#define ALERT_PHONE "+97694156086"
 
 // --- SIM900 UART (must match your wiring) ---
 // false = RX2/TX2 on GPIO 16 & 17 (best — USB Serial Monitor works at 115200)
 // true  = RX0/TX0 on GPIO 3 & 1 (your wiring: 3VT→RX0, 3VR←TX0)
 #define SIM_ON_RX0_TX0 true
-#define SIM_RX_PIN 3   // ESP RX0 ← SIM 3VT (SIM transmits)
-#define SIM_TX_PIN 1   // ESP TX0 → SIM 3VR (SIM receives)
+#define SIM_RX_PIN 16   // ESP RX0 ← SIM 3VT (SIM transmits)
+#define SIM_TX_PIN 17   // ESP TX0 → SIM 3VR (SIM receives)
 #define SIM_BAUD 9600
 
 // --- Pin map = numbers printed ON your ESP32 board (not the word "GPIO") ---
