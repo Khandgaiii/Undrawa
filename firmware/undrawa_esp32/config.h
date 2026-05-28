@@ -42,6 +42,18 @@
 // Leak: also trigger if level drops this much in 10 seconds (%)
 #define LEVEL_DROP_LEAK_PERCENT 8
 
+// --- Sensor stability tuning ---
+// Moisture sensor must stay wet this long before leak is confirmed.
+#define LEAK_SENSOR_WET_CONFIRM_MS 1200
+// Moisture sensor must stay dry this long before leak clears automatically.
+#define LEAK_SENSOR_DRY_CLEAR_MS 8000
+// Ignore rapid-drop detection right after boot (seconds).
+#define LEVEL_DROP_ARM_DELAY_MS 20000
+// Only evaluate rapid-drop leak when level is above this percent.
+#define LEVEL_DROP_MIN_START_PERCENT 20.0f
+// EMA smoothing factor for level percentage (0..1, higher = more reactive).
+#define LEVEL_FILTER_ALPHA 0.18f
+
 // mDNS hostname → app connects at http://undrawa.local
 #define MDNS_HOSTNAME "undrawa"
 

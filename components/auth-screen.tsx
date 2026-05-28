@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Droplet, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,16 +11,56 @@ import { type Translations } from '@/lib/translations'
 
 interface AuthScreenProps {
   onLogin: () => void
+  onGoogleLogin?: () => Promise<void> | void
   t: Translations
 }
 
-export function AuthScreen({ onLogin, t }: AuthScreenProps) {
+export function AuthScreen({ onLogin, onGoogleLogin, t }: AuthScreenProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const isNativeApp = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    const url = window.location.href
+    const host = window.location.hostname
+    const protocol = window.location.protocol
+    const ua = navigator.userAgent
+    const runningInWebView = /\bwv\b/i.test(ua) || /; wv\)/i.test(ua)
+    const runningFromCapacitorHost =
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      protocol === 'capacitor:' ||
+      protocol === 'file:' ||
+      url.startsWith('https://localhost')
+    const hasCapacitorBridge =
+      typeof (window as { Capacitor?: unknown }).Capacitor !== 'undefined'
+    return (
+      Capacitor.getPlatform() !== 'web' ||
+      Capacitor.isNativePlatform() ||
+      runningInWebView ||
+      runningFromCapacitorHost ||
+      hasCapacitorBridge
+    )
+  }, [])
+  const isMobileBrowser = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  }, [])
+  const showGoogleLogin = !isNativeApp && !isMobileBrowser && Boolean(onGoogleLogin)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onLogin()
+  }
+
+  const handleGoogleSignIn = async () => {
+    if (!onGoogleLogin || isNativeApp || googleLoading) return
+    setGoogleLoading(true)
+    try {
+      await onGoogleLogin()
+    } finally {
+      setGoogleLoading(false)
+    }
   }
 
   return (
@@ -109,6 +150,17 @@ export function AuthScreen({ onLogin, t }: AuthScreenProps) {
                 <Button type="submit" className="w-full mt-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/25">
                   {t.loginButton}
                 </Button>
+                {showGoogleLogin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleGoogleSignIn}
+                    disabled={googleLoading}
+                  >
+                    {googleLoading ? 'Signing in...' : 'Sign in with Google'}
+                  </Button>
+                )}
               </form>
             </TabsContent>
 

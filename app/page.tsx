@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Navbar } from '@/components/navbar'
 import { AuthScreen } from '@/components/auth-screen'
 import { HardwareMonitor } from '@/components/hardware-monitor'
@@ -10,6 +10,12 @@ import { DeviceSettings } from '@/components/device-settings'
 import { type Language, translations } from '@/lib/translations'
 import { useUndrawaDevice } from '@/hooks/use-undrawa-device'
 import { resetDeviceLeak } from '@/lib/device-api'
+import { Capacitor } from '@capacitor/core'
+import {
+  requestLeakNotificationPermission,
+  sendLeakDetectedNotification,
+} from '@/lib/notifications'
+import { signInWithGoogleWeb } from '@/lib/firebase-web'
 
 export default function UndrawaDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -30,6 +36,8 @@ export default function UndrawaDashboard() {
 
   const liveDevice = connected && status != null
   const t = translations[language]
+  const hadLeak = useRef(false)
+  const isNativeApp = Capacitor.isNativePlatform()
 
   const handleRelayToggle = useCallback(
     async (engaged: boolean) => {
@@ -50,11 +58,30 @@ export default function UndrawaDashboard() {
   }, [baseUrl, poll])
 
   const handleLogin = () => setIsAuthenticated(true)
+  const handleGoogleLogin = useCallback(async () => {
+    const user = await signInWithGoogleWeb()
+    if (user) {
+      setIsAuthenticated(true)
+    }
+  }, [])
   const handleLogout = () => {
     setIsAuthenticated(false)
     disconnect()
   }
   const handleLanguageChange = (lang: Language) => setLanguage(lang)
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    void requestLeakNotificationPermission()
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    const isLeakingNow = Boolean(liveDevice && status?.isLeaking)
+    if (isLeakingNow && !hadLeak.current) {
+      void sendLeakDetectedNotification()
+    }
+    hadLeak.current = isLeakingNow
+  }, [liveDevice, status?.isLeaking])
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +96,11 @@ export default function UndrawaDashboard() {
       />
 
       {!isAuthenticated ? (
-        <AuthScreen onLogin={handleLogin} t={t} />
+        <AuthScreen
+          onLogin={handleLogin}
+          onGoogleLogin={isNativeApp ? undefined : handleGoogleLogin}
+          t={t}
+        />
       ) : (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
           <div className="animate-fade-in">

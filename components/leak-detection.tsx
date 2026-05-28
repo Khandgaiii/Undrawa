@@ -24,6 +24,8 @@ export function LeakDetection({
   smsSent = false,
   onClearAlert,
 }: LeakDetectionProps) {
+  const showLeak = liveDevice && isLeaking
+  const showNormal = liveDevice && !isLeaking
   const levelDisplay =
     liveDevice && waterLevelPercent != null
       ? `${waterLevelPercent.toFixed(0)}${t.percent}`
@@ -39,7 +41,7 @@ export function LeakDetection({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card
           className={`lg:col-span-2 overflow-hidden transition-all duration-500 ${
-            isLeaking
+            showLeak
               ? 'border-destructive bg-destructive/10 pulse-alert'
               : 'glass border-success/30 card-hover'
           }`}
@@ -51,7 +53,7 @@ export function LeakDetection({
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-8 gap-4">
-              {isLeaking ? (
+              {showLeak ? (
                 <>
                   <div className="relative">
                     <ShieldAlert className="h-20 w-20 text-destructive animate-bounce" />
@@ -79,13 +81,15 @@ export function LeakDetection({
                     <div className="absolute inset-0 bg-success/20 rounded-full blur-xl animate-pulse" />
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-success">{t.statusNotLeaked}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {liveDevice
-                        ? `${t.waterLevel}: ${levelDisplay}`
-                        : t.systemNormal}
+                    <p className="text-2xl font-bold text-success">
+                      {showNormal ? t.statusNotLeaked : t.deviceOffline}
                     </p>
-                    {liveDevice && lowWater && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {showNormal
+                        ? `${t.waterLevel}: ${levelDisplay}`
+                        : t.connectDeviceToControl}
+                    </p>
+                    {showNormal && lowWater && (
                       <p className="text-sm text-warning mt-1">{t.lowWater}</p>
                     )}
                   </div>
@@ -105,7 +109,7 @@ export function LeakDetection({
             <div className="flex flex-col items-center justify-center py-6 gap-4">
               <div
                 className={`p-4 rounded-xl transition-all duration-500 ${
-                  isLeaking || lowWater
+                  showLeak || (showNormal && lowWater)
                     ? 'bg-destructive/20 text-destructive'
                     : 'bg-primary/20 text-primary animate-float'
                 }`}
@@ -118,7 +122,7 @@ export function LeakDetection({
                 </p>
                 <p
                   className={`text-4xl font-mono font-bold tabular-nums ${
-                    lowWater ? 'text-destructive' : 'text-foreground'
+                    showNormal && lowWater ? 'text-destructive' : 'text-foreground'
                   }`}
                 >
                   {levelDisplay}

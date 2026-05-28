@@ -28,6 +28,10 @@ float waterLevelPercent = 0;
 int waterLevelRaw = 0;
 float levelAtWindowStart = 0;
 unsigned long levelWindowStart = 0;
+float filteredWaterLevelPercent = 0;
+bool levelFilterInitialized = false;
+unsigned long wetSinceMs = 0;
+unsigned long drySinceMs = 0;
 
 const unsigned long SMS_COOLDOWN_MS = 300000;  // 5 min between SMS
 const unsigned long AUTO_RELAY_DELAY_MS = 2000; // same as app UI
@@ -239,15 +243,46 @@ void clearLeak() {
   setRelay(false);
 }
 
+void clearLeakStateOnly() {
+  isLeaking = false;
+  leakDetectedAt = 0;
+  smsSentForEvent = false;
+  smsRetryPending = false;
+}
+
 void updateSensors() {
   waterLevelRaw = readLevelRaw();
-  waterLevelPercent = rawToPercent(waterLevelRaw);
-
-  if (readLeakSensor()) {
-    triggerLeak("moisture sensor");
+  float currentLevel = rawToPercent(waterLevelRaw);
+  if (!levelFilterInitialized) {
+    filteredWaterLevelPercent = currentLevel;
+    levelFilterInitialized = true;
+  } else {
+    filteredWaterLevelPercent =
+      (LEVEL_FILTER_ALPHA * currentLevel) +
+      ((1.0f - LEVEL_FILTER_ALPHA) * filteredWaterLevelPercent);
   }
+  waterLevelPercent = filteredWaterLevelPercent;
 
   unsigned long now = millis();
+
+  bool leakRawWet = readLeakSensor();
+  if (leakRawWet) {
+    if (wetSinceMs == 0) wetSinceMs = now;
+    drySinceMs = 0;
+  } else {
+    if (drySinceMs == 0) drySinceMs = now;
+    wetSinceMs = 0;
+  }
+
+  bool moistureLeakConfirmed =
+    wetSinceMs > 0 && (now - wetSinceMs >= LEAK_SENSOR_WET_CONFIRM_MS);
+  bool moistureDryConfirmed =
+    drySinceMs > 0 && (now - drySinceMs >= LEAK_SENSOR_DRY_CLEAR_MS);
+
+  if (moistureLeakConfirmed) {
+    triggerLeak("moisture sensor (confirmed)");
+  }
+
   if (now - lastLevelSampleAt >= 500) {
     lastLevelSampleAt = now;
 
@@ -256,10 +291,16 @@ void updateSensors() {
       levelAtWindowStart = waterLevelPercent;
     } else {
       float drop = levelAtWindowStart - waterLevelPercent;
-      if (drop >= LEVEL_DROP_LEAK_PERCENT) {
+      bool dropDetectionArmed = now >= LEVEL_DROP_ARM_DELAY_MS;
+      bool validDropWindow = levelAtWindowStart >= LEVEL_DROP_MIN_START_PERCENT;
+      if (dropDetectionArmed && validDropWindow && drop >= LEVEL_DROP_LEAK_PERCENT) {
         triggerLeak("rapid level drop");
       }
     }
+  }
+
+  if (isLeaking && moistureDryConfirmed) {
+    clearLeakStateOnly();
   }
 }
 
