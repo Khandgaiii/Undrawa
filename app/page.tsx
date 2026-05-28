@@ -15,7 +15,7 @@ import {
   requestLeakNotificationPermission,
   sendLeakDetectedNotification,
 } from '@/lib/notifications'
-import { signInWithGoogleWeb } from '@/lib/firebase-web'
+import { completeGoogleRedirectWeb, signInWithGoogleWeb } from '@/lib/firebase-web'
 
 export default function UndrawaDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -59,9 +59,16 @@ export default function UndrawaDashboard() {
 
   const handleLogin = () => setIsAuthenticated(true)
   const handleGoogleLogin = useCallback(async () => {
-    const user = await signInWithGoogleWeb()
-    if (user) {
+    const result = await signInWithGoogleWeb()
+    if (result.user) {
       setIsAuthenticated(true)
+      return
+    }
+    if (result.redirectStarted) {
+      return
+    }
+    if (result.errorMessage && typeof window !== 'undefined') {
+      window.alert(result.errorMessage)
     }
   }, [])
   const handleLogout = () => {
@@ -69,6 +76,21 @@ export default function UndrawaDashboard() {
     disconnect()
   }
   const handleLanguageChange = (lang: Language) => setLanguage(lang)
+
+  useEffect(() => {
+    if (isNativeApp) return
+    let cancelled = false
+    const finishRedirect = async () => {
+      const user = await completeGoogleRedirectWeb()
+      if (!cancelled && user) {
+        setIsAuthenticated(true)
+      }
+    }
+    void finishRedirect()
+    return () => {
+      cancelled = true
+    }
+  }, [isNativeApp])
 
   useEffect(() => {
     if (!isAuthenticated) return
